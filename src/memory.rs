@@ -1,6 +1,9 @@
 use crate::gate::Gate;
 use nalgebra::{DMatrix, DMatrixSlice, DMatrixSliceMut};
-use num::{complex::Complex64, Zero};
+use num::{
+    complex::{Complex64, ComplexFloat},
+    Zero,
+};
 
 #[derive(Debug)]
 pub struct Memory {
@@ -31,6 +34,10 @@ impl Memory {
 
     pub fn qubits_matrix_mut(&mut self) -> DMatrixSliceMut<Complex64> {
         self.qubits.slice_mut((0, 0), self.qubits.shape())
+    }
+
+    pub fn measure(&self, index: usize) -> bool {
+        self.qubits[index * 2 + 1].abs().powi(2) >= 0.5
     }
 
     pub fn apply_gate<G>(&mut self, start: usize, gate: &G)
