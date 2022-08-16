@@ -2,6 +2,7 @@ use crate::gate::Gate;
 use nalgebra::{DMatrix, DMatrixSlice, DMatrixSliceMut};
 use num::{
     complex::{Complex64, ComplexFloat},
+    One,
     Zero,
 };
 
@@ -21,11 +22,35 @@ impl Memory {
             )
         }
 
-        Self { qubits: matrix }
+        let this = Self { qubits: matrix };
+
+        for index in 0 .. this.qubits.shape().0 {
+            let axiom_term = this.qubits[index * 2].abs().powi(2)
+                + this.qubits[index * 2 + 1].abs().powi(2);
+            if (axiom_term - 1.0).abs() >= 1e-30 {
+                panic!(
+                    "Qubit {} does not respect probability axiom, alpha: {}, \
+                     beta: {}, sum of probabilities: {}",
+                    index,
+                    this.qubits[index * 2],
+                    this.qubits[index * 2 + 1],
+                    axiom_term
+                );
+            }
+        }
+
+        this
     }
 
     pub fn zeroed(size: usize) -> Self {
-        Self { qubits: DMatrix::from_element(size * 2, 1, Complex64::zero()) }
+        let mut this = Self {
+            qubits: DMatrix::from_element(size * 2, 1, Complex64::zero()),
+        };
+        for index in 0 .. size {
+            this.qubits[index * 2].set_one();
+            this.qubits[index * 2 + 1].set_zero();
+        }
+        this
     }
 
     pub fn qubits_matrix(&self) -> DMatrixSlice<Complex64> {
@@ -36,8 +61,20 @@ impl Memory {
         self.qubits.slice_mut((0, 0), self.qubits.shape())
     }
 
-    pub fn measure(&self, index: usize) -> bool {
+    pub fn predict_measure(&self, index: usize) -> bool {
         self.qubits[index * 2 + 1].abs().powi(2) >= 0.5
+    }
+
+    pub fn measure(&mut self, index: usize) -> bool {
+        let measured = self.predict_measure(index);
+        if measured {
+            self.qubits[index * 2].set_zero();
+            self.qubits[index * 2 + 1].set_one();
+        } else {
+            self.qubits[index * 2].set_one();
+            self.qubits[index * 2 + 1].set_zero();
+        }
+        measured
     }
 
     pub fn apply_gate<G>(&mut self, start: usize, gate: &G)
