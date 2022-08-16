@@ -1,6 +1,6 @@
 use crate::memory::Memory;
 use nalgebra::{DMatrix, SMatrix};
-use num::{complex::Complex64, Integer, Zero};
+use num::{complex::Complex64, Integer, One, Zero};
 
 pub trait Gate {
     fn apply(&self, memory: &mut Memory, start: usize);
@@ -17,6 +17,16 @@ impl<const N: usize> SGate<N> {
             panic!("SGate must be have an even dimension, found {}", N);
         }
         Self { elements }
+    }
+
+    pub fn identity() -> Self {
+        let mut matrix = SMatrix::from_element(Complex64::zero());
+
+        for index in 0 .. N {
+            matrix[(index, index)] = Complex64::one();
+        }
+
+        Self::from_matrix(matrix)
     }
 }
 
@@ -52,6 +62,17 @@ impl DGate {
             );
         }
         Self { elements }
+    }
+
+    pub fn identity(size: usize) -> Self {
+        let mut matrix =
+            DMatrix::from_element(size * 2, size * 2, Complex64::zero());
+
+        for index in 0 .. size {
+            matrix[(index, index)] = Complex64::one();
+        }
+
+        Self::from_matrix(matrix)
     }
 }
 

@@ -25,15 +25,15 @@ impl Memory {
         let this = Self { qubits: matrix };
 
         for index in 0 .. this.qubits.shape().0 {
-            let axiom_term = this.qubits[index * 2].abs().powi(2)
-                + this.qubits[index * 2 + 1].abs().powi(2);
+            let axiom_term = this.qubits[(index * 2, 0)].abs().powi(2)
+                + this.qubits[(index * 2 + 1, 0)].abs().powi(2);
             if (axiom_term - 1.0).abs() >= 1e-30 {
                 panic!(
                     "Qubit {} does not respect probability axiom, alpha: {}, \
                      beta: {}, sum of probabilities: {}",
                     index,
-                    this.qubits[index * 2],
-                    this.qubits[index * 2 + 1],
+                    this.qubits[(index * 2, 0)],
+                    this.qubits[(index * 2 + 1, 0)],
                     axiom_term
                 );
             }
@@ -47,8 +47,8 @@ impl Memory {
             qubits: DMatrix::from_element(size * 2, 1, Complex64::zero()),
         };
         for index in 0 .. size {
-            this.qubits[index * 2].set_one();
-            this.qubits[index * 2 + 1].set_zero();
+            this.qubits[(index * 2, 0)].set_one();
+            this.qubits[(index * 2 + 1, 0)].set_zero();
         }
         this
     }
@@ -62,17 +62,17 @@ impl Memory {
     }
 
     pub fn predict_measure(&self, index: usize) -> bool {
-        self.qubits[index * 2 + 1].abs().powi(2) >= 0.5
+        self.qubits[(index * 2 + 1, 0)].abs().powi(2) >= 0.5
     }
 
     pub fn measure(&mut self, index: usize) -> bool {
         let measured = self.predict_measure(index);
         if measured {
-            self.qubits[index * 2].set_zero();
-            self.qubits[index * 2 + 1].set_one();
+            self.qubits[(index * 2, 0)].set_zero();
+            self.qubits[(index * 2 + 1, 0)].set_one();
         } else {
-            self.qubits[index * 2].set_one();
-            self.qubits[index * 2 + 1].set_zero();
+            self.qubits[(index * 2, 0)].set_one();
+            self.qubits[(index * 2 + 1, 0)].set_zero();
         }
         measured
     }
